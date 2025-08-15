@@ -1,0 +1,49 @@
+# User-specific files (never commit these)
+CLAUDE.local.md
+settings.json
+.claude-protocols-version
+
+# Personal data directories
+local/
+todos/
+backups/
+profiles/
+sessions/
+ide/
+projects/
+shell-snapshots/
+statsig/
+
+# Serena memories
+.serena/
+
+# System files
+.DS_Store
+*.swp
+*.tmp
+*.bak
+*.backup
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Test coverage
+coverage/
+*.lcov
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Dependencies (if any)
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc

@@ -1,0 +1,159 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "description": "Validate and improve tool usage",
+        "patterns": [
+          {
+            "tool": "Bash",
+            "validations": [
+              {
+                "pattern": "\\bgrep\\b(?!.*\\|)",
+                "message": "Use 'rg' (ripgrep) instead of grep for better performance",
+                "suggestion": "rg"
+              },
+              {
+                "pattern": "\\bfind\\s+.*-name",
+                "message": "Use 'rg --files' or Glob tool instead of find",
+                "suggestion": "rg --files | rg"
+              },
+              {
+                "pattern": "\\bcat\\s+.*\\.(py|js|ts|jsx|tsx|go|rs)",
+                "message": "Use Read tool for code files instead of cat",
+                "suggestion": "Read"
+              }
+            ]
+          },
+          {
+            "tool": "Read",
+            "validations": [
+              {
+                "pattern": "\\.(py|js|ts|jsx|tsx|go|rs|java|cpp|c|h)$",
+                "message": "Consider using Serena symbolic tools for code files",
+                "severity": "warning"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "description": "Auto-format and test after code changes",
+        "triggers": [
+          {
+            "tools": ["Write", "Edit", "MultiEdit"],
+            "actions": [
+              {
+                "type": "format",
+                "condition": "isCodeFile",
+                "commands": {
+                  "python": "black {file} && ruff check {file}",
+                  "javascript": "prettier --write {file} && eslint {file}",
+                  "typescript": "prettier --write {file} && tsc --noEmit",
+                  "go": "gofmt -w {file} && go vet {file}",
+                  "rust": "rustfmt {file} && cargo clippy"
+                }
+              },
+              {
+                "type": "test",
+                "condition": "hasTestFile",
+                "command": "npm test -- --findRelatedTests {file}"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "description": "Update documentation after API changes",
+        "triggers": [
+          {
+            "filePatterns": ["**/api/**", "**/routes/**", "**/controllers/**"],
+            "actions": [
+              {
+                "type": "documentation",
+                "command": "npm run generate-api-docs"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "description": "Load project context and status",
+        "actions": [
+          {
+            "type": "context",
+            "commands": [
+              "git status --short",
+              "git log --oneline -5",
+              "test -f package.json && npm run test:quick || true",
+              "echo 'Active branches:' && git branch -a | head -10"
+            ]
+          },
+          {
+            "type": "memory",
+            "load": ["project_overview", "task_completion_checklist", "workflow_priorities"]
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "description": "Context injection for better responses",
+        "patterns": [
+          {
+            "match": "fix.*bug|debug|error",
+            "inject": "Remember to follow the debugging protocol: reproduce, isolate, root cause, fix, verify."
+          },
+          {
+            "match": "test|spec",
+            "inject": "Remember: NEVER use mocks. Always use real implementations for testing."
+          },
+          {
+            "match": "deploy|release|production",
+            "inject": "Run comprehensive checks before deployment: tests, linting, security audit, performance."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "description": "Session cleanup and summary",
+        "actions": [
+          {
+            "type": "summary",
+            "template": "Session completed. Changes made: {git_diff_stats}. Tests status: {test_status}."
+          },
+          {
+            "type": "reminder",
+            "conditions": {
+              "hasUncommittedChanges": "Remember to commit your changes",
+              "hasFailingTests": "Warning: Some tests are failing",
+              "hasLintErrors": "Note: Linting errors need to be fixed"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "autoApprove": {
+      "Read": true,
+      "Grep": true,
+      "Glob": true,
+      "LS": true
+    },
+    "requireApproval": {
+      "Bash": ["rm", "sudo", "chmod", "chown"],
+      "Write": ["*.env", "*config*", "*secret*"],
+      "Edit": ["*.env", "*config*", "*secret*"]
+    },
+    "parallel": {
+      "enabled": true,
+      "maxConcurrent": 5,
+      "tools": ["Read", "Grep", "Glob", "WebFetch"]
+    }
+  }
+}
